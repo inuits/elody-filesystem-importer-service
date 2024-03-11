@@ -1,0 +1,135 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+      "title": "Inuits DAMS filesystem importer service API",
+      "description": "An API to import files on the basis of a csv",
+      "contact": {
+        "email": "developers@inuits.eu"
+      },
+      "version": "0.0.1"
+    },
+    "externalDocs": {
+      "description": "Find out more about DAMS",
+      "url": "https://docs.inuits.io/dams/filesystem-importer-service"
+    },
+    "servers": [
+      {
+        "url": "/"
+      }
+    ],
+    "paths": {
+      "/import": {
+        "post": {
+          "tags": [
+            "import"
+          ],
+          "summary": "Import a csv file",
+          "operationId": "import",
+          "parameters": [
+            {
+              "name": "selected-folder",
+              "in": "query",
+              "description": "Give the folder where te csv is located on the filesystem, for example: /import/files",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "default": ""
+              }
+            },
+            {
+                "name": "selected-file",
+                "in": "query",
+                "description": "Name of the csv on the filesystem, for example: test.csv",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "default": ""
+                }
+            }
+          ],
+          "requestBody": {
+            "description": "Details needed to run an import",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/import"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "successful operation",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/import"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "malformed request body",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/import"
+                  }
+                }
+              }
+            },
+            "405": {
+              "description": "invalid input",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/import"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/health": {
+        "get": {
+          "tags": [
+            "health"
+          ],
+          "summary": "Get health of ocr service",
+          "operationId": "getHealth",
+          "responses": {
+            "200": {
+              "description": "successful operation"
+            },
+            "500": {
+              "description": "internal server error"
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "import": {
+          "type": "object",
+          "description": "Necessary import information",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "selected-folder": {
+              "type": "string",
+              "description": "Path to the selected folder"
+            },
+            "selected-file": {
+              "type": "string",
+              "description": "Name of the csv"
+            }
+          }
+        }
+      }
+    }
+  }
+  

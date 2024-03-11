@@ -1,0 +1,66 @@
+import app
+import requests
+import os
+
+from elody import Client
+from singleton import Singleton
+
+collection_api_url = os.getenv("COLLECTION_API_URL")
+elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
+
+csv_headers = {
+    "Content-Type": "text/csv",
+    "Accept": "text/uri-list",
+}
+
+upload_file_headers = {
+    "Content-Type": "application/octet-stream",
+}
+
+
+class ValidationError(Exception):
+    def __init__(self, errors):
+        self.errors = errors
+
+    def __str__(self):
+        error_str = ""
+        for key, value in self.errors.items():
+            error_str += f"{key}: {', '.join(value)}\n"
+        return error_str
+
+
+class CollectionApiService(metaclass=Singleton):
+    def __init__(self):
+        self.collection_api_url = os.getenv("COLLECTION_API_URL")
+        self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
+
+    def validate(self, data):
+        response = requests.post(
+            f"{self.collection_api_url}/batch?dry_run=1",
+            headers={**self.headers, **csv_headers},
+            data=data,
+        ).json()
+        if errors := response.get("errors"):
+            raise ValidationError(errors)
+        return True
+
+    def get_upload_link(self, data):
+        return requests.post(
+            f"{self.collection_api_url}/batch",
+            headers={**self.headers, **csv_headers},
+            data=data,
+        ).text.strip()
+
+    def upload_file(self, upload_link, filename, folder, keep_files=True):
+        with open(f"{folder}/{filename}", "rb") as f:
+            data = f.read()
+        upload_link = upload_link.replace(
+            "storage-api-vliz-dams:5000", "storage-api.vliz-dams.localhost:8000"
+        )
+        response = requests.post(
+            upload_link,
+            headers={**self.headers, **upload_file_headers},
+            data=data,
+        )
+        if response.status_code in range(200, 300) and not keep_files:
+            os.remove(f"{folder}/{filename}")

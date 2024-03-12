@@ -1,12 +1,7 @@
-import app
 import requests
 import os
 
-from elody import Client
 from singleton import Singleton
-
-collection_api_url = os.getenv("COLLECTION_API_URL")
-elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
 
 csv_headers = {
     "Content-Type": "text/csv",
@@ -54,9 +49,10 @@ class CollectionApiService(metaclass=Singleton):
     def upload_file(self, upload_link, filename, folder, keep_files=True):
         with open(f"{folder}/{filename}", "rb") as f:
             data = f.read()
-        upload_link = upload_link.replace(
-            "storage-api-vliz-dams:5000", "storage-api.vliz-dams.localhost:8000"
-        )
+        # For local testing only
+        # upload_link = upload_link.replace(
+        #     "storage-api-vliz-dams:5000", "storage-api.vliz-dams.localhost:8000"
+        # )
         response = requests.post(
             upload_link,
             headers={**self.headers, **upload_file_headers},

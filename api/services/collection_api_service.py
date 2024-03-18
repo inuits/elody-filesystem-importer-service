@@ -36,7 +36,9 @@ class CollectionApiService(metaclass=Singleton):
             data=data,
         ).json()
         if errors := response.get("errors"):
-            raise ValidationError(errors)
+            for _, error in errors.items():
+                if error:
+                    raise ValidationError(errors)
         return True
 
     def get_upload_link(self, data):

@@ -97,7 +97,7 @@
           "tags": [
             "health"
           ],
-          "summary": "Get health of ocr service",
+          "summary": "Get health of file-system-importer service",
           "operationId": "getHealth",
           "responses": {
             "200": {
@@ -132,4 +132,3 @@
       }
     }
   }
-  

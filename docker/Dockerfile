@@ -4,6 +4,7 @@ FROM python:3.11-alpine AS base-stage
 ENV FLASK_APP=app.py
 
 RUN adduser --disabled-password --home /app --shell /bin/bash app
+RUN pip install flask-cors
 
 USER app
 WORKDIR /app

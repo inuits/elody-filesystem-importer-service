@@ -9,6 +9,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory
+from flask_cors import CORS
 
 if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     import sentry_sdk
@@ -29,6 +30,7 @@ API_URL = (
 swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL)
 
 app = Flask(__name__)
+CORS(app)
 api = Api(app)
 app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(16))
 
@@ -91,9 +93,13 @@ except ModuleNotFoundError:
 load_queues(logger)
 
 from resources.importer import Importer
+from resources.importer import ImporterDirectories, ImporterStart, ListDirectories
 from resources.spec import OpenAPISpec
 
 api.add_resource(Importer, "/import")
+api.add_resource(ImporterDirectories, "/import/directories")
+api.add_resource(ListDirectories, "/import/list-directories")
+api.add_resource(ImporterStart, "/import/start")
 api.add_resource(OpenAPISpec, "/spec/inuits-dams-filesystem-importer-service.json")
 
 if __name__ == "__main__":

@@ -2,7 +2,6 @@
 FROM python:3.11-alpine AS base-stage
 
 ENV FLASK_APP=app.py
-RUN echo "KOM IK HIER??"
 
 RUN adduser --disabled-password --home /app --shell /bin/bash app
 

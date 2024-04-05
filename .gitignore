@@ -150,4 +150,7 @@ import/
 # pip configuration
 pip.conf
 
-files/
+# Ignore all contents within the 'files' directory
+files/*
+# Except for the .gitkeep file
+!files/.gitkeep

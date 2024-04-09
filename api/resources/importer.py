@@ -23,29 +23,6 @@ def has_subdirs(path):
         return any(entry.is_dir() for entry in entries)
 
 
-def get_parent_directories(path):
-    parent_directories = []
-    with os.scandir(path) as entries:
-        for entry in entries:
-            if entry.is_dir() and entry.name not in ('.', '..'):
-                subdir_path = os.path.join(path, entry.name)
-                if any(subentry.is_dir() for subentry in os.scandir(subdir_path)):
-                    parent_directory_id = entry.name
-                    parent_directories.append({
-                        "id": parent_directory_id,
-                        "dir": parent_directory_id,
-                        "has_subdirs": True
-                    })
-                else:
-                    parent_directory_id = entry.name
-                    parent_directories.append({
-                        "id": parent_directory_id,
-                        "dir": parent_directory_id,
-                        "has_subdirs": False
-                    })
-    return parent_directories
-
-
 class Importer(Resource):
 
     @policy_factory.authenticate(RequestContext(request))
@@ -105,41 +82,4 @@ class ImporterDirectories(Resource):
                     }
                 )
             return directories
-
-
-class ListDirectories(Resource):
-    def get(self):
-        directory_param = request.args.get("dir")
-        is_parent = request.args.get("is_parent")
-
-        if directory_param:
-            path = os.path.join(UPLOAD_SOURCE, directory_param.lstrip("/"))
-        else:
-            path = UPLOAD_SOURCE
-
-        if not os.path.exists(path):
-            abort(400, message=f"{path} not found")
-
-        if is_parent == "true":
-            directories = get_parent_directories(path)
-        else:
-            directories = self.list_directories_recursively(path)
-
-        return directories, 200
-
-    def list_directories_recursively(self, path):
-        directories = []
-        with os.scandir(path) as entries:
-            for entry in entries:
-                if entry.is_dir() and entry.name not in ('.', '..'):
-                    subdir_path = os.path.join(path, entry.name)
-                    subdirectories = self.list_directories_recursively(subdir_path)
-                    directory_id = subdir_path[len(UPLOAD_SOURCE):]
-                    directories.append({
-                        "id": directory_id,
-                        "dir": directory_id,
-                        "has_subdirs": bool(subdirectories),
-                        "subdirectories": subdirectories
-                    })
-        return directories
 

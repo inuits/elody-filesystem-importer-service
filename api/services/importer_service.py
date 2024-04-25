@@ -2,9 +2,7 @@ import os
 
 from urllib.parse import urlparse
 
-class ImporterService:
-    upload_source = os.getenv("UPLOAD_SOURCE", "/mnt/media-import")
-   
+class ImporterService:  
     def get_filename_from_upload_link(self, upload_link):
         path = urlparse(upload_link).path
         filename = path.split("/")[-1]

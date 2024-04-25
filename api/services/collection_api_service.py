@@ -12,7 +12,6 @@ upload_file_headers = {
     "Content-Type": "application/octet-stream",
 }
 
-
 class ValidationError(Exception):
     def __init__(self, errors):
         self.errors = errors
@@ -51,10 +50,6 @@ class CollectionApiService(metaclass=Singleton):
     def upload_file(self, upload_link, filename, folder, keep_files=True):
         with open(f"{folder}/{filename}", "rb") as f:
             data = f.read()
-        # For local testing only
-        # upload_link = upload_link.replace(
-        #     "storage-api-vliz-dams:5000", "storage-api.vliz-dams.localhost:8000"
-        # )
         response = requests.post(
             upload_link,
             headers={**self.headers, **upload_file_headers},

@@ -93,10 +93,12 @@ except ModuleNotFoundError:
 load_queues(logger)
 import resources.queues
 
-from resources.importer import Importer
+from resources.importer import Importer, ImporterDirectories, ImporterStart
 from resources.spec import OpenAPISpec
 
 api.add_resource(Importer, "/import")
+api.add_resource(ImporterDirectories, "/importer/directories")
+api.add_resource(ImporterStart, "/importer/start")
 api.add_resource(OpenAPISpec, "/spec/inuits-dams-filesystem-importer-service.json")
 
 if __name__ == "__main__":

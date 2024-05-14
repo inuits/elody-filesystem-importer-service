@@ -1,7 +1,7 @@
 import os
 
 from app import policy_factory, rabbit
-from flask import request
+from flask import request, jsonify
 from flask_restful import abort, Resource
 from inuits_policy_based_auth import RequestContext
 from services.collection_api_service import CollectionApiService
@@ -33,7 +33,7 @@ class Importer(ImporterBase):
         csv_files = [file for file in os.listdir(folder_path) if file.endswith('.csv')]
 
         if len(csv_files) != 1:
-            abort(400, message=f"Expected exactly 1 CSV file in {selected_folder}, found {len(csv_files)}")
+            abort(400, status=400, message_id=f"error-csv-count", count=len(csv_files))
 
         selected_file = csv_files[0]
         request_path = os.path.join(selected_folder, selected_file)
@@ -47,7 +47,9 @@ class Importer(ImporterBase):
         collection_api_service = CollectionApiService()
         collection_api_service.validate(data)
         upload_links = collection_api_service.get_upload_link(data)
-        signal_upload_file(rabbit, upload_links, selected_folder)
+        signal_upload_file(rabbit, upload_links, folder_path)
+
+        return jsonify(status=200, message_id="import-success", count=len(csv_files))
 
 
 class ImporterDirectories(ImporterBase):
@@ -55,9 +57,7 @@ class ImporterDirectories(ImporterBase):
         with os.scandir(path) as entries:
             return any(entry.is_dir() for entry in entries)
 
-    @policy_factory.apply_policies(
-        RequestContext(request, ["get-importer-directories"])
-    )
+    @policy_factory.authenticate(RequestContext(request))
     def get(self):
         path = self.upload_source
         if request_dir := request.args.get("dir"):

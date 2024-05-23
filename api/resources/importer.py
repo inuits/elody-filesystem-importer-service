@@ -7,13 +7,16 @@ from inuits_policy_based_auth import RequestContext
 from services.collection_api_service import CollectionApiService
 from elody.util import signal_upload_file
 
-def get_upload_source():
-    return os.getenv("UPLOAD_SOURCE", "/mnt/media-import")
 
 class ImporterBase(Resource):
+    @staticmethod
+    def get_upload_source():
+        return os.getenv("UPLOAD_SOURCE", "/mnt/media-import")
+
     def __init__(self):
         super().__init__()
-        self.upload_source = get_upload_source()
+        self.upload_source = self.get_upload_source()
+
 
 class Importer(ImporterBase):
     def __get_request_body(self):

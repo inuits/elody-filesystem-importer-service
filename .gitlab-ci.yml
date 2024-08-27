@@ -1,0 +1,17 @@
+---
+include:
+  - project: 'inuits/gitlab-ci/pipeline-templates'
+    ref: 'v3.0.0'
+    file: 
+      - '/pipelines/multi-customer-delivery.yml'
+      - '/jobs/build-variant/pip.yml'
+
+variables:
+  PROJECT: 'dams'
+  APPLICATION: 'filesystem-importer'
+
+customer:
+  parallel:
+    matrix:
+      - CUSTOMER:
+        - digipolis

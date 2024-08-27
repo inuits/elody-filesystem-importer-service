@@ -152,5 +152,3 @@ pip.conf
 
 # Ignore all contents within the 'files' directory
 files/*
-# Except for the .gitkeep file
-!files/.gitkeep

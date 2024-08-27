@@ -10,8 +10,6 @@ WORKDIR /app
 
 COPY docker/entrypoint*.sh /    
 COPY requirements.txt ./
-COPY files ./files
-# COPY requirements_dev.txt ./
 
 RUN echo "export PATH=${PATH}:/app/.local/bin" >> .bashrc
 

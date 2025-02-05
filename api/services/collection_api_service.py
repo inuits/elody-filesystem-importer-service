@@ -31,7 +31,7 @@ class CollectionApiService(metaclass=Singleton):
     def validate(self, data):
         response = requests.post(
             f"{self.collection_api_url}/batch?dry_run=1",
-            headers={**self.headers, **csv_headers},
+            headers={**self.headers, **{"Content-Type": "text/csv"}},
             data=data,
         ).json()
         if errors := response.get("errors"):

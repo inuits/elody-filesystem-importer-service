@@ -24,9 +24,7 @@ if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     )
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
-API_URL = (
-    "/spec/inuits-dams-filesystem-importer-service.json"  # Our API url (can of course be a local resource)
-)
+API_URL = "/spec/inuits-dams-filesystem-importer-service.json"  # Our API url (can of course be a local resource)
 
 swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL)
 
@@ -77,6 +75,7 @@ def rabbit_available():
         return True, "Successfully reached RabbitMQ"
     return False, "Failed to reach RabbitMQ"
 
+
 health = HealthCheck()
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
@@ -87,8 +86,8 @@ try:
     load_policies(policy_factory, logger, module.PERMISSIONS)
 except ModuleNotFoundError:
     load_policies(policy_factory, logger)
-    
-    
+
+
 # Initialize RabbitMQ Queues
 load_queues(logger)
 import resources.queues

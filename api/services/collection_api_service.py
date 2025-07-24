@@ -1,6 +1,7 @@
 import requests
 import os
 
+from app import logger
 from singleton import Singleton
 
 csv_headers = {
@@ -11,6 +12,7 @@ csv_headers = {
 upload_file_headers = {
     "Content-Type": "application/octet-stream",
 }
+
 
 class ValidationError(Exception):
     def __init__(self, errors):
@@ -41,11 +43,17 @@ class CollectionApiService(metaclass=Singleton):
         return True
 
     def get_upload_link(self, data):
-        return requests.post(
-            f"{self.collection_api_url}/batch",
-            headers={**self.headers, **csv_headers},
-            data=data,
-        ).text.strip()
+        return (
+            requests.post(
+                f"{self.collection_api_url}/batch",
+                headers={**self.headers, **csv_headers},
+                data=data,
+            )
+            .text.strip()
+            .replace('"', "")
+            .replace("'", "")
+            .replace("\\n", "\n")
+        )
 
     def upload_file(self, upload_link, filename, folder, keep_files=True):
         with open(f"{folder}/{filename}", "rb") as f:
@@ -55,5 +63,8 @@ class CollectionApiService(metaclass=Singleton):
             headers={**self.headers, **upload_file_headers},
             data=data,
         )
-        if response.status_code in range(200, 300) and not keep_files:
-            os.remove(f"{folder}/{filename}")
+        try:
+            if response.status_code in range(200, 300) and not keep_files:
+                os.remove(f"{folder}/{filename}")
+        except PermissionError as error:
+            logger.error(str(error))

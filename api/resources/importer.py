@@ -4,7 +4,7 @@ from app import policy_factory, rabbit
 from flask import request, jsonify
 from flask_restful import abort, Resource
 from inuits_policy_based_auth import RequestContext
-from services.collection_api_service import CollectionApiService
+from services.collection_api_service import CollectionApiService, ValidationError
 from elody.util import signal_upload_file
 
 
@@ -28,12 +28,14 @@ class Importer(ImporterBase):
     def post(self):
         path = self.upload_source
         request_body = self.__get_request_body()
-        if 'selected-folder' not in request_body:
+        if "selected-folder" not in request_body:
             abort(400, message="Missing 'selected-folder' in request body")
 
         selected_folder = request_body["selected-folder"]
-        folder_path = os.path.join(self.upload_source, selected_folder.removeprefix("/"))
-        csv_files = [file for file in os.listdir(folder_path) if file.endswith('.csv')]
+        folder_path = os.path.join(
+            self.upload_source, selected_folder.removeprefix("/")
+        )
+        csv_files = [file for file in os.listdir(folder_path) if file.endswith(".csv")]
 
         if len(csv_files) != 1:
             abort(400, status=400, message_id=f"error-csv-count", count=len(csv_files))
@@ -48,7 +50,10 @@ class Importer(ImporterBase):
         with open(path, "rb") as f:
             data = f.read()
         collection_api_service = CollectionApiService()
-        collection_api_service.validate(data)
+        try:
+            collection_api_service.validate(data)
+        except ValidationError as error:
+            abort(400, message=str(error))
         upload_links = collection_api_service.get_upload_link(data)
         signal_upload_file(rabbit, upload_links, folder_path)
 

@@ -81,4 +81,5 @@ class ImporterDirectories(ImporterBase):
                         "has_subdirs": self.__has_subdirs(directory.path),
                     }
                 )
+            directories.sort(key=lambda x: x["dir"].lower())
             return directories

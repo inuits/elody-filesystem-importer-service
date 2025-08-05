@@ -7,7 +7,7 @@ from services.importer_service import ImporterService
 
 @app.rabbit.queue("dams.upload_file")
 def upload_file(routing_key, body, message_id):
-    keep_files = getenv("KEEP_FILES", True) in [0, "0", False, "False", "false"]
+    keep_files = getenv("KEEP_FILES", True) in [1, "1", True, "True", "true"]
     
     collection_api_service = CollectionApiService()
     importer_service = ImporterService()

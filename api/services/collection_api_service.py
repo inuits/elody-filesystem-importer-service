@@ -66,5 +66,5 @@ class CollectionApiService(metaclass=Singleton):
         try:
             if response.status_code in range(200, 300) and not keep_files:
                 os.remove(f"{folder}/{filename}")
-        except PermissionError as error:
+        except Exception as error:
             logger.error(str(error))

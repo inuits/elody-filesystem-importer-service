@@ -6,7 +6,7 @@ import secrets
 
 from elody.loader import load_apps, load_policies, load_queues
 from elody.util import CustomJSONEncoder, custom_json_dumps
-from flask import Flask
+from flask import Flask, g
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
@@ -79,7 +79,12 @@ def rabbit_available():
 health = HealthCheck()
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
-policy_factory = PolicyFactory()
+
+def user_context_setter(user_context):
+    g.user_context = user_context
+
+
+policy_factory = PolicyFactory(user_context_setter)
 load_apps(app, logger)
 try:
     module = import_module("apps.permissions")

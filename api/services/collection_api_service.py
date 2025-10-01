@@ -42,12 +42,16 @@ class CollectionApiService(metaclass=Singleton):
                     raise ValidationError(errors)
         return True
 
-    def get_upload_link(self, data, parent_job_id):
+    def get_upload_link(self, data, parent_job_id, user_email=None):
         params = {"parent_job_id": parent_job_id}
+        headers = {}
+        if user_email:
+            headers.update({"X-User-Email": user_email})
+
         return (
             requests.post(
                 f"{self.collection_api_url}/batch",
-                headers={**self.headers, **csv_headers},
+                headers={**self.headers, **csv_headers, **headers},
                 data=data,
                 params=params,
             )

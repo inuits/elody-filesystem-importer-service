@@ -80,14 +80,16 @@ class Importer(ImporterBase):
             fail_job(parent_job_id, str(error), get_rabbit=get_rabbit)
             abort(400, message=str(error))
 
-        upload_links = collection_api_service.get_upload_link(data, parent_job_id)
+        upload_links = collection_api_service.get_upload_link(
+            data, parent_job_id, user_email=user_email
+        )
 
         file_upload_parent_job_id = init_job(
             "Upload Mediafiles",
             "Mediafile upload",
             get_rabbit=get_rabbit,
             get_user_context=lambda **_: g.get("user_context"),
-            user_email="developers@inuits.eu",
+            user_email=user_email or "developers@inuits.eu",
             parent_id=parent_job_id,
             track_async_children=True,
         )

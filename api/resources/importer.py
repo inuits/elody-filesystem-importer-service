@@ -1,11 +1,17 @@
 import os
 
-from app import policy_factory, rabbit
-from flask import request, jsonify
-from flask_restful import abort, Resource
+from elody.job import (
+    fail_job,
+    init_job,
+    start_job,
+)
+from elody.util import signal_upload_file
+from flask import g, jsonify, request
+from flask_restful import Resource, abort
+from app import policy_factory
+from rabbit import get_rabbit
 from inuits_policy_based_auth import RequestContext
 from services.collection_api_service import CollectionApiService, ValidationError
-from elody.util import signal_upload_file
 
 
 class ImporterBase(Resource):
@@ -38,7 +44,7 @@ class Importer(ImporterBase):
         csv_files = [file for file in os.listdir(folder_path) if file.endswith(".csv")]
 
         if len(csv_files) != 1:
-            abort(400, status=400, message_id=f"error-csv-count", count=len(csv_files))
+            abort(400, status=400, message_id="error-csv-count", count=len(csv_files))
 
         selected_file = csv_files[0]
         request_path = os.path.join(selected_folder, selected_file)
@@ -50,12 +56,53 @@ class Importer(ImporterBase):
         with open(path, "rb") as f:
             data = f.read()
         collection_api_service = CollectionApiService()
+
+        header_email = request.headers.get("X-User-Email", None)
+        user_email = header_email if header_email else g.get("user_context").email
+
+        parent_job_id = init_job(
+            "Network Drive Import",
+            "Network Import",
+            get_rabbit=get_rabbit,
+            get_user_context=lambda **_: g.get("user_context"),
+            user_email=user_email or "developers@inuits.eu",
+            track_async_children=True,
+        )
+
+        start_job(
+            parent_job_id,
+            get_rabbit=get_rabbit,
+        )
+
         try:
             collection_api_service.validate(data)
         except ValidationError as error:
+            fail_job(parent_job_id, str(error), get_rabbit=get_rabbit)
             abort(400, message=str(error))
-        upload_links = collection_api_service.get_upload_link(data)
-        signal_upload_file(rabbit, upload_links, folder_path)
+
+        upload_links = collection_api_service.get_upload_link(data, parent_job_id)
+
+        file_upload_parent_job_id = init_job(
+            "Upload Mediafiles",
+            "Mediafile upload",
+            get_rabbit=get_rabbit,
+            get_user_context=lambda **_: g.get("user_context"),
+            user_email="developers@inuits.eu",
+            parent_id=parent_job_id,
+            track_async_children=True,
+        )
+
+        start_job(
+            file_upload_parent_job_id,
+            get_rabbit=get_rabbit,
+        )
+
+        signal_upload_file(
+            get_rabbit(),
+            upload_links,
+            folder_path,
+            parent_job_id=file_upload_parent_job_id,
+        )
 
         return jsonify(status=200, message_id="import-success", count=len(csv_files))
 

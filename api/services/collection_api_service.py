@@ -42,12 +42,14 @@ class CollectionApiService(metaclass=Singleton):
                     raise ValidationError(errors)
         return True
 
-    def get_upload_link(self, data):
+    def get_upload_link(self, data, parent_job_id):
+        params = {"parent_job_id": parent_job_id}
         return (
             requests.post(
                 f"{self.collection_api_url}/batch",
                 headers={**self.headers, **csv_headers},
                 data=data,
+                params=params,
             )
             .text.strip()
             .replace('"', "")
@@ -55,13 +57,28 @@ class CollectionApiService(metaclass=Singleton):
             .replace("\\n", "\n")
         )
 
-    def upload_file(self, upload_link, filename, folder, keep_files=True):
+    def upload_file(
+        self,
+        upload_link,
+        filename,
+        folder,
+        keep_files=True,
+        parent_job_id=None,
+        user_email=None,
+    ):
+
         with open(f"{folder}/{filename}", "rb") as f:
             data = f.read()
+        params = {}
+        if parent_job_id:
+            params.update({"parent_job_id": parent_job_id})
+        if user_email:
+            params.update({"user_email": user_email})
         response = requests.post(
             upload_link,
             headers={**self.headers, **upload_file_headers},
             data=data,
+            params=params,
         )
         try:
             if response.status_code in range(200, 300) and not keep_files:

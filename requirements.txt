@@ -11,7 +11,7 @@ cloudevents==1.11.0
 cryptography==44.0.2
 decorator==5.2.1
 deprecation==2.1.0
-elody[loader]==0.0.217
+elody[loader]==0.0.221
 Flask==3.1.0
 Flask-RESTful==0.3.10
 flask-swagger-ui==4.11.1
@@ -35,4 +35,3 @@ sentry-sdk[flask]==2.24.1
 six==1.17.0
 urllib3==2.3.0
 Werkzeug==3.1.3
-

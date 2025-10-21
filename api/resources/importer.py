@@ -81,28 +81,29 @@ class Importer(ImporterBase):
             abort(400, message=str(error))
 
         upload_links = collection_api_service.get_upload_link(data, parent_job_id)
+        if upload_links:
 
-        file_upload_parent_job_id = init_job(
-            "Upload Mediafiles",
-            "Mediafile upload",
-            get_rabbit=get_rabbit,
-            get_user_context=lambda **_: g.get("user_context"),
-            user_email="developers@inuits.eu",
-            parent_id=parent_job_id,
-            track_async_children=True,
-        )
+            file_upload_parent_job_id = init_job(
+                "Upload Mediafiles",
+                "Mediafile upload",
+                get_rabbit=get_rabbit,
+                get_user_context=lambda **_: g.get("user_context"),
+                user_email="developers@inuits.eu",
+                parent_id=parent_job_id,
+                track_async_children=True,
+            )
 
-        start_job(
-            file_upload_parent_job_id,
-            get_rabbit=get_rabbit,
-        )
+            start_job(
+                file_upload_parent_job_id,
+                get_rabbit=get_rabbit,
+            )
 
-        signal_upload_file(
-            get_rabbit(),
-            upload_links,
-            folder_path,
-            parent_job_id=file_upload_parent_job_id,
-        )
+            signal_upload_file(
+                get_rabbit(),
+                upload_links,
+                folder_path,
+                parent_job_id=file_upload_parent_job_id,
+            )
 
         return jsonify(status=200, message_id="import-success", count=len(csv_files))
 

@@ -1,5 +1,5 @@
 ### Base stage
-FROM python:3.11-alpine AS base-stage
+FROM python:3.12-alpine AS base-stage
 
 ENV FLASK_APP=app.py
 
@@ -8,7 +8,7 @@ RUN adduser --disabled-password --home /app --shell /bin/bash app
 USER app
 WORKDIR /app
 
-COPY docker/entrypoint*.sh /    
+COPY docker/entrypoint*.sh /
 COPY requirements.txt ./
 
 RUN echo "export PATH=${PATH}:/app/.local/bin" >> .bashrc
@@ -44,6 +44,3 @@ COPY --from=build-stage /app /app
 ENV GUNICORN_CMD_ARGS="--workers=3"
 
 EXPOSE 8000
-
-
-

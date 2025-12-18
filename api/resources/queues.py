@@ -1,3 +1,4 @@
+from app import logger
 from rabbit import get_rabbit
 from os import getenv
 import requests
@@ -9,8 +10,33 @@ from services.importer_service import ImporterService
 
 collection_api_url = os.getenv("COLLECTION_API_URL")
 
+queue_prefix = getenv("QUEUE_PREFIX", "")
+queue_type = getenv("QUEUE_TYPE", "classic")
+routing_key_prefix = getenv("ROUTING_KEY_PREFIX", "dams")
 
-@get_rabbit().queue("dams.upload_file")
+
+def __is_malformed_message(data, fields):
+    if not all(x in data for x in fields):
+        logger.error(f"Message malformed: missing one of {fields}")
+        return True
+    return False
+
+
+def __argument_wrapper(*, queue_name, routing_key):
+    arguments = {"routing_key": routing_key}
+    if getenv("AMQP_MANAGER", "amqpstorm_flask") == "amqpstorm_flask":
+        arguments["queue_name"] = queue_name
+        if queue_type:
+            arguments["queue_arguments"] = {"x-queue-type": queue_type}
+    return arguments
+
+
+@get_rabbit().queue(
+    **__argument_wrapper(
+        queue_name=f"{(queue_prefix + '.') if queue_prefix else ''}upload_file",
+        routing_key=f"{routing_key_prefix}.upload_file",
+    )
+)
 def upload_file(routing_key, body, message_id):
     keep_files = getenv("KEEP_FILES", True) in [1, "1", True, "True", "true"]
 

@@ -1,17 +1,17 @@
 import os
+from os import getenv
 
-from elody.job import (
-    fail_job,
-    init_job,
-    start_job,
-)
-from elody.util import signal_upload_file
+from app import policy_factory
+from elody.util import send_cloudevent
 from flask import g, jsonify, request
 from flask_restful import Resource, abort
-from app import policy_factory
-from rabbit import get_rabbit
 from inuits_policy_based_auth import RequestContext
+from models.job_data import JobData
+from rabbit import get_rabbit
+from resources.utils import init_job_wrapper, start_job_wrapper, fail_job_wrapper
 from services.collection_api_service import CollectionApiService, ValidationError
+
+routing_key_prefix = getenv("ROUTING_KEY_PREFIX", "dams")
 
 
 class ImporterBase(Resource):
@@ -60,43 +60,43 @@ class Importer(ImporterBase):
         header_email = request.headers.get("X-User-Email", None)
         user_email = header_email if header_email else g.get("user_context").email
 
-        parent_job_id = init_job(
-            "Network Drive Import",
-            "Network Import",
-            get_rabbit=get_rabbit,
-            get_user_context=lambda **_: g.get("user_context"),
-            user_email=user_email or "developers@inuits.eu",
-            track_async_children=True,
+        parent_job_data = JobData.model_validate(
+            {
+                "name": "Network Drive Import",
+                "job_type": "Network Import",
+                "user_email": (user_email or "developers@inuits.eu"),
+                "track_async_children": True,
+            }
         )
 
-        start_job(
-            parent_job_id,
-            get_rabbit=get_rabbit,
-        )
+        parent_job_id = init_job_wrapper(parent_job_data)
+
+        start_job_wrapper(parent_job_id)
 
         try:
             collection_api_service.validate(data)
         except ValidationError as error:
-            fail_job(parent_job_id, str(error), get_rabbit=get_rabbit)
+            fail_job_wrapper(
+                parent_job_id,
+                str(error),
+            )
             abort(400, message=str(error))
 
         upload_links = collection_api_service.get_upload_link(data, parent_job_id)
         if upload_links:
 
-            file_upload_parent_job_id = init_job(
-                "Upload Mediafiles",
-                "Mediafile upload",
-                get_rabbit=get_rabbit,
-                get_user_context=lambda **_: g.get("user_context"),
-                user_email="developers@inuits.eu",
-                parent_id=parent_job_id,
-                track_async_children=True,
+            file_upload_parent_job_data = JobData.model_validate(
+                {
+                    "name": "Upload Mediafiles",
+                    "job_type": "Mediafile upload",
+                    "user_email": (user_email or "developers@inuits.eu"),
+                    "track_async_children": True,
+                    "parent_id": parent_job_id,
+                }
             )
 
-            start_job(
-                file_upload_parent_job_id,
-                get_rabbit=get_rabbit,
-            )
+            file_upload_parent_job_id = init_job_wrapper(file_upload_parent_job_data)
+            start_job_wrapper(file_upload_parent_job_id)
 
             signal_upload_file(
                 get_rabbit(),
@@ -131,3 +131,12 @@ class ImporterDirectories(ImporterBase):
                 )
             directories.sort(key=lambda x: x["dir"].lower())
             return directories
+
+
+def signal_upload_file(mq_client, upload_links, selected_folder, parent_job_id=None):
+    data = {
+        "upload_links": upload_links,
+        "selected_folder": selected_folder,
+        "parent_job_id": parent_job_id,
+    }
+    send_cloudevent(mq_client, "dams", f"{routing_key_prefix + '.'}upload_file", data)

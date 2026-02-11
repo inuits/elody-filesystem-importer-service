@@ -82,27 +82,14 @@ class Importer(ImporterBase):
             )
             abort(400, message=str(error))
 
-        upload_links = collection_api_service.get_upload_link(data, parent_job_id)
+        upload_links = collection_api_service.get_upload_link(
+            data, parent_job_id, path.split("/")[-1]
+        )
         if upload_links:
-
-            file_upload_parent_job_data = JobData.model_validate(
-                {
-                    "name": "Upload Mediafiles",
-                    "job_type": "Mediafile upload",
-                    "user_email": (user_email or "developers@inuits.eu"),
-                    "track_async_children": True,
-                    "parent_id": parent_job_id,
-                }
-            )
-
-            file_upload_parent_job_id = init_job_wrapper(file_upload_parent_job_data)
-            start_job_wrapper(file_upload_parent_job_id)
-
             signal_upload_file(
                 get_rabbit(),
                 upload_links,
                 folder_path,
-                parent_job_id=file_upload_parent_job_id,
             )
 
         return jsonify(status=200, message_id="import-success", count=len(csv_files))

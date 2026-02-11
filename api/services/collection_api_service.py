@@ -3,6 +3,7 @@ import os
 
 from app import logger
 from singleton import Singleton
+from urllib.parse import quote
 
 csv_headers = {
     "Content-Type": "text/csv",
@@ -42,11 +43,11 @@ class CollectionApiService(metaclass=Singleton):
                     raise ValidationError(errors)
         return True
 
-    def get_upload_link(self, data, parent_job_id):
+    def get_upload_link(self, data, parent_job_id, filename):
         params = {"parent_job_id": parent_job_id}
         return (
             requests.post(
-                f"{self.collection_api_url}/batch",
+                f"{self.collection_api_url}/batch?filename={quote(filename)}",
                 headers={**self.headers, **csv_headers},
                 data=data,
                 params=params,

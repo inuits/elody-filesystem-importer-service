@@ -29,7 +29,7 @@ class ValidationError(Exception):
 class CollectionApiService(metaclass=Singleton):
     def __init__(self):
         self.collection_api_url = os.getenv("COLLECTION_API_URL")
-        self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
+        self.headers = {"Authorization": f"Bearer {os.getenv('STATIC_JWT')}"}
 
     def validate(self, data):
         response = requests.post(

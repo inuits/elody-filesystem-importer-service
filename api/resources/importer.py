@@ -2,14 +2,15 @@ import os
 from os import getenv
 
 from app import policy_factory
-from elody.util import send_cloudevent
 from flask import g, jsonify, request
 from flask_restful import Resource, abort
 from inuits_policy_based_auth import RequestContext
 from models.job_data import JobData
 from rabbit import get_rabbit
-from resources.utils import init_job_wrapper, start_job_wrapper, fail_job_wrapper
-from services.collection_api_service import CollectionApiService, ValidationError
+from resources.utils import (
+    init_job_wrapper,
+    signal_import_csv,
+)
 
 routing_key_prefix = getenv("ROUTING_KEY_PREFIX", "dams")
 
@@ -53,46 +54,27 @@ class Importer(ImporterBase):
         if not os.path.exists(path):
             abort(400, message=f"{path} not found")
 
-        with open(path, "rb") as f:
-            data = f.read()
-        collection_api_service = CollectionApiService()
-
         header_email = request.headers.get("X-User-Email", None)
         user_email = header_email if header_email else g.get("user_context").email
 
         parent_job_data = JobData.model_validate(
             {
-                "name": "Network Drive Import",
+                "name": f"Network Drive Import {path.split('/')[-1]}",
                 "job_type": "Network Import",
                 "user_email": (user_email or "developers@inuits.eu"),
                 "track_async_children": True,
             }
         )
-
         parent_job_id = init_job_wrapper(parent_job_data)
 
-        start_job_wrapper(parent_job_id)
+        signal_import_csv(get_rabbit(), path, folder_path, parent_job_id)
 
-        try:
-            collection_api_service.validate(data)
-        except ValidationError as error:
-            fail_job_wrapper(
-                parent_job_id,
-                str(error),
-            )
-            abort(400, message=str(error))
-
-        upload_links = collection_api_service.get_upload_link(
-            data, parent_job_id, path.split("/")[-1]
+        return jsonify(
+            status=200,
+            message_id="import-success",
+            job_id=parent_job_id,
+            count=len(csv_files),
         )
-        if upload_links:
-            signal_upload_file(
-                get_rabbit(),
-                upload_links,
-                folder_path,
-            )
-
-        return jsonify(status=200, message_id="import-success", count=len(csv_files))
 
 
 class ImporterDirectories(ImporterBase):
@@ -118,12 +100,3 @@ class ImporterDirectories(ImporterBase):
                 )
             directories.sort(key=lambda x: x["dir"].lower())
             return directories
-
-
-def signal_upload_file(mq_client, upload_links, selected_folder, parent_job_id=None):
-    data = {
-        "upload_links": upload_links,
-        "selected_folder": selected_folder,
-        "parent_job_id": parent_job_id,
-    }
-    send_cloudevent(mq_client, "dams", f"{routing_key_prefix + '.'}upload_file", data)

@@ -1,12 +1,16 @@
+import os
+from os import getenv
+
+import requests
 from app import logger
 from rabbit import get_rabbit
-from os import getenv
-import requests
-import os
-
-from services.collection_api_service import CollectionApiService
+from resources.utils import (
+    fail_job_wrapper,
+    signal_upload_file,
+    start_job_wrapper,
+)
+from services.collection_api_service import CollectionApiService, ValidationError
 from services.importer_service import ImporterService
-
 
 collection_api_url = os.getenv("COLLECTION_API_URL")
 
@@ -29,6 +33,45 @@ def __argument_wrapper(*, queue_name, routing_key):
         if queue_type:
             arguments["queue_arguments"] = {"x-queue-type": queue_type}
     return arguments
+
+
+@get_rabbit().queue(
+    **__argument_wrapper(
+        queue_name=f"{(queue_prefix + '.') if queue_prefix else ''}import_csv",
+        routing_key=f"{routing_key_prefix}.import_csv",
+    )
+)
+def upload_csv(routing_key, body, message_id):
+
+    collection_api_service = CollectionApiService()
+    data = body["data"]
+    csv_path = data["csv_path"]
+    folder_path = data["selected_folder"]
+    parent_job_id = data.get("parent_job_id", None)
+
+    with open(csv_path, "rb") as f:
+        data = f.read()
+
+    start_job_wrapper(parent_job_id)
+
+    try:
+        collection_api_service.validate(data)
+    except ValidationError as error:
+        fail_job_wrapper(
+            parent_job_id,
+            str(error),
+        )
+        return
+
+    upload_links = collection_api_service.get_upload_link(
+        data, parent_job_id, csv_path.split("/")[-1]
+    )
+    if upload_links:
+        signal_upload_file(
+            get_rabbit(),
+            upload_links,
+            folder_path,
+        )
 
 
 @get_rabbit().queue(
@@ -62,7 +105,7 @@ def upload_file(routing_key, body, message_id):
 # it should probably be moved to a common place
 def __resolve_user_from_parent_job(main_job_id):
     try:
-        headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
+        headers = {"Authorization": f"Bearer {os.getenv('STATIC_JWT')}"}
         r = requests.get(
             f"{collection_api_url}/jobs/{main_job_id}", headers=headers, timeout=5
         )

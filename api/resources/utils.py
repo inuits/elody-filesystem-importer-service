@@ -13,7 +13,7 @@ job_endpoints_enabled = getenv("JOB_ENDPOINTS_ENABLED", False) in {  # noqa: PLW
     "True",
     True,
 }
-job_api_base = getenv("JOB_API_URL")
+job_api_base = getenv("JOB_API_BASE_URL")
 static_jwt = getenv("STATIC_JWT")
 
 headers = {"Authorization": f"Bearer {static_jwt}"}

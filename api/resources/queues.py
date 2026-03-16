@@ -64,13 +64,20 @@ def upload_csv(routing_key, body, message_id):
         return
 
     upload_links = collection_api_service.get_upload_link(
-        data, parent_job_id, csv_path.split("/")[-1]
+        data,
+        parent_job_id,
+        csv_path.split("/")[-1],
     )
     if upload_links:
         signal_upload_file(
             get_rabbit(),
             upload_links,
             folder_path,
+        )
+    else:
+        fail_job_wrapper(
+            parent_job_id,
+            "No files to upload!",
         )
 
 
@@ -99,6 +106,11 @@ def upload_file(routing_key, body, message_id):
                 parent_job_id=parent_job_id,
                 user_email=user_email,
             )
+    else:
+        fail_job_wrapper(
+            parent_job_id,
+            "No files to upload!",
+        )
 
 
 # NOTE: This is currently a direct copy of a function in the OCR_service, so

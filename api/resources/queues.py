@@ -47,6 +47,7 @@ def upload_csv(routing_key, body, message_id):
     data = body["data"]
     csv_path = data["csv_path"]
     folder_path = data["selected_folder"]
+    ocr = data["ocr"]
     parent_job_id = data.get("parent_job_id", None)
 
     with open(csv_path, "rb") as f:
@@ -67,6 +68,7 @@ def upload_csv(routing_key, body, message_id):
         data,
         parent_job_id,
         csv_path.split("/")[-1],
+        ocr=ocr,
     )
     if upload_links:
         signal_upload_file(

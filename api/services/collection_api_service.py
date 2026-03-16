@@ -48,8 +48,10 @@ class CollectionApiService(metaclass=Singleton):
                     raise ValidationError(errors)
         return True
 
-    def get_upload_link(self, data, parent_job_id, filename):
+    def get_upload_link(self, data, parent_job_id, filename, *, ocr: bool = False):
         params = {"parent_job_id": parent_job_id}
+        if ocr:
+            params.update({"extra_mediafile_type": "ocr"})
         return (
             requests.post(
                 f"{self.collection_api_url}/batch?filename={quote(filename)}",
@@ -100,7 +102,11 @@ class CollectionApiService(metaclass=Singleton):
         try:
             if (
                 response.status_code in range(200, 300)
-                or response.status_code == HTTPStatus.CONFLICT
+                or response.status_code
+                in (
+                    HTTPStatus.CONFLICT,  # 409: Duplicate file, can be deleted
+                    HTTPStatus.UNPROCESSABLE_ENTITY,  # 422: Empty file
+                )
             ) and not keep_files:
                 file_path.unlink(missing_ok=True)
         except Exception as error:

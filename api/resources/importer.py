@@ -26,7 +26,7 @@ class ImporterBase(Resource):
 
 
 class Importer(ImporterBase):
-    def __get_request_body(self):
+    def __get_request_body(self):  # noqa: RET503
         if request_body := request.get_json(silent=True):
             return request_body
         abort(405, message="Invalid input")
@@ -35,12 +35,16 @@ class Importer(ImporterBase):
     def post(self):
         path = self.upload_source
         request_body = self.__get_request_body()
+        ocr = False
         if "selected-folder" not in request_body:
             abort(400, message="Missing 'selected-folder' in request body")
+        if "ocr" in request_body:
+            ocr = request_body["ocr"] in {True, "true", "True"}
 
         selected_folder = request_body["selected-folder"]
         folder_path = os.path.join(
-            self.upload_source, selected_folder.removeprefix("/")
+            self.upload_source,
+            selected_folder.removeprefix("/"),
         )
         csv_files = [file for file in os.listdir(folder_path) if file.endswith(".csv")]
 
@@ -55,7 +59,7 @@ class Importer(ImporterBase):
             abort(400, message=f"{path} not found")
 
         header_email = request.headers.get("X-User-Email", None)
-        user_email = header_email if header_email else g.get("user_context").email
+        user_email = header_email or g.get("user_context").email
 
         parent_job_data = JobData.model_validate(
             {
@@ -63,11 +67,11 @@ class Importer(ImporterBase):
                 "job_type": "Network Import",
                 "user_email": (user_email or "developers@inuits.eu"),
                 "track_async_children": True,
-            }
+            },
         )
         parent_job_id = init_job_wrapper(parent_job_data)
 
-        signal_import_csv(get_rabbit(), path, folder_path, parent_job_id)
+        signal_import_csv(get_rabbit(), path, folder_path, parent_job_id, ocr=ocr)
 
         return jsonify(
             status=200,
@@ -96,7 +100,7 @@ class ImporterDirectories(ImporterBase):
                     {
                         "dir": directory.path.removeprefix(self.upload_source),
                         "has_subdirs": self.__has_subdirs(directory.path),
-                    }
+                    },
                 )
             directories.sort(key=lambda x: x["dir"].lower())
             return directories

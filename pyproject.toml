@@ -1,0 +1,48 @@
+[project]
+name = "filesystem-importer-service"
+version = "0.0.1"
+
+
+[tool.ruff.lint]
+extend-select = [
+  "F",   # Pyflakes: catch logical errors (unused imports/variables)
+  "W",   # pycodestyle: style warnings (whitespace, formatting)
+  "E",   # pycodestyle: style errors (syntax issues)
+  "I",   # isort: automatically sort and group imports
+  "UP",  # pyupgrade: modernize Python syntax
+  "C4",  # flake8-comprehensions: enforce better list/dict/set comprehensions
+  "FA",  # flake8-future-annotations: enforce `from __future__ import annotations`
+  "ISC", # flake8-implicit-str-concat: prevent accidental string concatenation
+  "ICN", # flake8-import-conventions: enforce standard aliases (e.g., import pandas as pd)
+  "RET", # flake8-return: clean up return and yield statements
+  "SIM", # flake8-simplify: simplify code structure (e.g., merge nested ifs)
+  "TID", # flake8-tidy-imports: ban messy relative imports
+  "TC",  # flake8-type-checking: move type-only imports to TYPE_CHECKING blocks
+  "PTH", # flake8-use-pathlib: prefer pathlib objects over os.path
+  "TD",  # flake8-todos: enforce standard formatting for TODOs
+  "SLF", # flake8-self: prevent access to private class attributes outside the class
+  "T20", # flake8-print: no print() or pprint() statements allowed
+  "ERA", # eradicate: find and flag commented-out code
+  "BLE", # flake8-blind-except: prevent bare `except:` blocks
+  "FBT", # flake8-boolean-trap: prevent raw boolean positional args (forces kwargs)
+  "B",   # flake8-bugbear: catch common bugs and design flaws missed by standard linters
+  "A",   # flake8-builtins: prevent shadowing python built-ins (Note: We'll likely turn this off due to `type`)
+  "COM", # flake8-commas: enforce trailing commas for cleaner git diffs
+  "DTZ", # flake8-datetimez: ban naive datetimes (must have timezone info)
+  "LOG", # flake8-logging: catch bad logging practices (like f-strings in log messages)
+  "Q",   # flake8-quotes: enforce consistent string quotes
+  "N",   # pep8-naming: enforce PEP 8 naming conventions (CamelCase, snake_case)
+  # "DOC",# pydoclint: docstring arguments must match function signature
+  # "D",  # pydocstyle: strict docstring formatting (large undertaking to enforce)
+  "PL",   # Pylint: broad catch-all for code smells and complexity
+  "FURB", # refurb: modernize code using newer standard library features
+  "RUF",  # Ruff-specific: custom rules created by the Ruff team
+  "TRY",  # tryceratops: prevent exception handling anti-patterns
+]
+ignore = [
+  "E402",
+  "D203",
+  "D212",
+  "FBT",  # flake8-boolean-trap: Too disruptive to function signatures right now
+  "BLE",  # flake8-blind-except: Needs careful review of what exceptions to catch
+]

@@ -1,9 +1,14 @@
-import requests
 import os
+from http import HTTPStatus
+from pathlib import Path
+from urllib.parse import parse_qs, quote, urlparse
 
+import requests
 from app import logger
+from resources.utils import (
+    fail_job_wrapper,
+)
 from singleton import Singleton
-from urllib.parse import quote
 
 csv_headers = {
     "Content-Type": "text/csv",
@@ -58,7 +63,7 @@ class CollectionApiService(metaclass=Singleton):
             .replace("\\n", "\n")
         )
 
-    def upload_file(
+    def upload_file(  # noqa: PLR0913
         self,
         upload_link,
         filename,
@@ -68,7 +73,18 @@ class CollectionApiService(metaclass=Singleton):
         user_email=None,
     ):
 
-        with open(f"{folder}/{filename}", "rb") as f:
+        file_path = Path(f"{folder}/{filename}")
+        if not file_path.exists():
+            if not parent_job_id:
+                parsed_url = urlparse(upload_link)
+                parent_job_id = parse_qs(parsed_url.query)["parent_job_id"][0]
+            if parent_job_id:
+                fail_job_wrapper(
+                    parent_job_id,
+                    f"File {file_path.name} not found on NAS.",
+                )
+
+        with file_path.open("rb") as f:
             data = f.read()
         params = {}
         if parent_job_id:
@@ -82,7 +98,10 @@ class CollectionApiService(metaclass=Singleton):
             params=params,
         )
         try:
-            if response.status_code in range(200, 300) and not keep_files:
-                os.remove(f"{folder}/{filename}")
+            if (
+                response.status_code in range(200, 300)
+                or response.status_code == HTTPStatus.CONFLICT
+            ) and not keep_files:
+                file_path.unlink(missing_ok=True)
         except Exception as error:
             logger.error(str(error))

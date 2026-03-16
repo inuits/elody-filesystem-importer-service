@@ -45,4 +45,5 @@ ignore = [
   "D212",
   "FBT",  # flake8-boolean-trap: Too disruptive to function signatures right now
   "BLE",  # flake8-blind-except: Needs careful review of what exceptions to catch
+  "PTH",  # flake8-use-pathlib: prefer pathlib objects over os.path
 ]

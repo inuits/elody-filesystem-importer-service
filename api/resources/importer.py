@@ -1,5 +1,6 @@
 import os
 from os import getenv
+from time import sleep
 
 from amqpstorm.exception import AMQPConnectionError
 from app import policy_factory
@@ -69,21 +70,30 @@ class Importer(ImporterBase):
         )
         parent_job_id = init_job_wrapper(parent_job_data)
 
-        try:
-            signal_import_csv(get_rabbit(), path, folder_path, parent_job_id, ocr=ocr)
-        except AMQPConnectionError:
-            fail_job_wrapper(parent_job_id, "Task could not be processed")
-            return jsonify(
-                status=500,
-                message_id="import-failure",
-                job_id=parent_job_id,
-            )
-
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                signal_import_csv(
+                    get_rabbit(),
+                    path,
+                    folder_path,
+                    parent_job_id,
+                    ocr=ocr,
+                )
+                return jsonify(
+                    status=200,
+                    message_id="import-success",
+                    job_id=parent_job_id,
+                    count=len(csv_files),
+                )
+            except AMQPConnectionError:
+                if attempt < max_retries - 1:
+                    sleep(5)
+        fail_job_wrapper(parent_job_id, "Task could not be processed")
         return jsonify(
-            status=200,
-            message_id="import-success",
+            status=500,
+            message_id="import-failure",
             job_id=parent_job_id,
-            count=len(csv_files),
         )
 
 

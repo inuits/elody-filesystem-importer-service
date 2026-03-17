@@ -1,16 +1,14 @@
 import os
 from os import getenv
 
+from amqpstorm.exception import AMQPConnectionError
 from app import policy_factory
 from flask import g, jsonify, request
 from flask_restful import Resource, abort
 from inuits_policy_based_auth import RequestContext
 from models.job_data import JobData
 from rabbit import get_rabbit
-from resources.utils import (
-    init_job_wrapper,
-    signal_import_csv,
-)
+from resources.utils import fail_job_wrapper, init_job_wrapper, signal_import_csv
 
 routing_key_prefix = getenv("ROUTING_KEY_PREFIX", "dams")
 
@@ -71,7 +69,15 @@ class Importer(ImporterBase):
         )
         parent_job_id = init_job_wrapper(parent_job_data)
 
-        signal_import_csv(get_rabbit(), path, folder_path, parent_job_id, ocr=ocr)
+        try:
+            signal_import_csv(get_rabbit(), path, folder_path, parent_job_id, ocr=ocr)
+        except AMQPConnectionError:
+            fail_job_wrapper(parent_job_id, "Task could not be processed")
+            return jsonify(
+                status=500,
+                message_id="import-failure",
+                job_id=parent_job_id,
+            )
 
         return jsonify(
             status=200,

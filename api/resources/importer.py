@@ -53,6 +53,7 @@ class Importer(ImporterBase):
         selected_file = csv_files[0]
         request_path = os.path.join(selected_folder, selected_file)
         path = os.path.join(self.upload_source, request_path.removeprefix("/"))
+        auth_header = request.headers.get("Authorization")
 
         if not os.path.exists(path):
             abort(400, message=f"{path} not found")
@@ -77,7 +78,8 @@ class Importer(ImporterBase):
                     get_rabbit(),
                     path,
                     folder_path,
-                    parent_job_id,
+                    headers={"Authorization": auth_header, "X-User-Email": user_email},
+                    parent_job_id=parent_job_id,
                     ocr=ocr,
                 )
                 return jsonify(

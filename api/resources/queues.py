@@ -39,7 +39,7 @@ def __argument_wrapper(*, queue_name, routing_key):
     **__argument_wrapper(
         queue_name=f"{(queue_prefix + '.') if queue_prefix else ''}import_csv",
         routing_key=f"{routing_key_prefix}.import_csv",
-    )
+    ),
 )
 def upload_csv(routing_key, body, message_id):
 
@@ -49,6 +49,7 @@ def upload_csv(routing_key, body, message_id):
     folder_path = data["selected_folder"]
     ocr = data["ocr"]
     parent_job_id = data.get("parent_job_id", None)
+    headers = data.get("headers")
 
     with open(csv_path, "rb") as f:
         data = f.read()
@@ -69,12 +70,14 @@ def upload_csv(routing_key, body, message_id):
         parent_job_id,
         csv_path.split("/")[-1],
         ocr=ocr,
+        headers=headers,
     )
     if upload_links:
         signal_upload_file(
             get_rabbit(),
             upload_links,
             folder_path,
+            headers=headers,
         )
     else:
         fail_job_wrapper(
@@ -87,16 +90,17 @@ def upload_csv(routing_key, body, message_id):
     **__argument_wrapper(
         queue_name=f"{(queue_prefix + '.') if queue_prefix else ''}upload_file",
         routing_key=f"{routing_key_prefix}.upload_file",
-    )
+    ),
 )
 def upload_file(routing_key, body, message_id):
-    keep_files = getenv("KEEP_FILES", True) in [1, "1", True, "True", "true"]
+    keep_files = getenv("KEEP_FILES", "true") in [1, "1", True, "True", "true"]
 
     collection_api_service = CollectionApiService()
     importer_service = ImporterService()
     data = body["data"]
     upload_links = data["upload_links"]
     parent_job_id = data.get("parent_job_id", None)
+    headers = data["headers"]
     user_email = __resolve_user_from_parent_job(parent_job_id)
     if upload_links:
         for upload_link in upload_links.splitlines():
@@ -104,6 +108,7 @@ def upload_file(routing_key, body, message_id):
                 upload_link,
                 importer_service.get_filename_from_upload_link(upload_link),
                 data["selected_folder"],
+                headers=headers,
                 keep_files=keep_files,
                 parent_job_id=parent_job_id,
                 user_email=user_email,
@@ -121,9 +126,11 @@ def __resolve_user_from_parent_job(main_job_id):
     try:
         headers = {"Authorization": f"Bearer {os.getenv('STATIC_JWT')}"}
         r = requests.get(
-            f"{collection_api_url}/jobs/{main_job_id}", headers=headers, timeout=5
+            f"{collection_api_url}/jobs/{main_job_id}",
+            headers=headers,
+            timeout=5,
         )
-        if r.status_code == 200:
+        if r.status_code == 200:  # noqa: PLR2004
             job = r.json()
             return job.get("created_by") or job.get("last_editor") or None
     except Exception:

@@ -66,10 +66,11 @@ def fail_job_wrapper(job_id: str, error_message: str) -> None:
         )
 
 
-def signal_import_csv(
+def signal_import_csv(  # noqa: PLR0913
     mq_client,
     csv_path,
     selected_folder,
+    headers,
     parent_job_id=None,
     *,
     ocr: bool = False,
@@ -79,14 +80,22 @@ def signal_import_csv(
         "selected_folder": selected_folder,
         "parent_job_id": parent_job_id,
         "ocr": ocr,
+        "headers": headers,
     }
     send_cloudevent(mq_client, "dams", f"{routing_key_prefix + '.'}import_csv", data)
 
 
-def signal_upload_file(mq_client, upload_links, selected_folder, parent_job_id=None):
+def signal_upload_file(
+    mq_client,
+    upload_links,
+    selected_folder,
+    headers,
+    parent_job_id=None,
+):
     data = {
         "upload_links": upload_links,
         "selected_folder": selected_folder,
         "parent_job_id": parent_job_id,
+        "headers": headers,
     }
     send_cloudevent(mq_client, "dams", f"{routing_key_prefix + '.'}upload_file", data)

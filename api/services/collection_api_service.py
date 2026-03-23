@@ -48,14 +48,22 @@ class CollectionApiService(metaclass=Singleton):
                     raise ValidationError(errors)
         return True
 
-    def get_upload_link(self, data, parent_job_id, filename, *, ocr: bool = False):
+    def get_upload_link(
+        self,
+        data,
+        parent_job_id,
+        filename,
+        headers,
+        *,
+        ocr: bool = False,
+    ) -> str:
         params = {"parent_job_id": parent_job_id}
         if ocr:
             params.update({"extra_mediafile_type": "ocr"})
         return (
             requests.post(
                 f"{self.collection_api_url}/batch?filename={quote(filename)}",
-                headers={**self.headers, **csv_headers},
+                headers={**self.headers, **headers, **csv_headers},
                 data=data,
                 params=params,
             )
@@ -70,6 +78,7 @@ class CollectionApiService(metaclass=Singleton):
         upload_link,
         filename,
         folder,
+        headers,
         keep_files=True,
         parent_job_id=None,
         user_email=None,
@@ -95,7 +104,7 @@ class CollectionApiService(metaclass=Singleton):
             params.update({"user_email": user_email})
         response = requests.post(
             upload_link,
-            headers={**self.headers, **upload_file_headers},
+            headers={**self.headers, **headers, **upload_file_headers},
             data=data,
             params=params,
         )

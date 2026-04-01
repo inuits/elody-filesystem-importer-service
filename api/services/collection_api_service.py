@@ -95,19 +95,18 @@ class CollectionApiService(metaclass=Singleton):
                     f"File {file_path.name} not found on NAS.",
                 )
 
-        with file_path.open("rb") as f:
-            data = f.read()
         params = {}
         if parent_job_id:
             params.update({"parent_job_id": parent_job_id})
         if user_email:
             params.update({"user_email": user_email})
-        response = requests.post(
-            upload_link,
-            headers={**self.headers, **headers, **upload_file_headers},
-            data=data,
-            params=params,
-        )
+        with file_path.open("rb") as f:
+            response = requests.post(
+                upload_link,
+                headers={**self.headers, **headers, **upload_file_headers},
+                data=f,
+                params=params,
+            )
         try:
             if (
                 response.status_code in range(200, 300)

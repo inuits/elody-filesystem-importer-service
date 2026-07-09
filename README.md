@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://elody.eu"><img src="https://elody.eu/images/logo.svg" alt="Elody" width="96" /></a>
+</p>
+
+<p align="center">Part of <a href="https://elody.eu">Elody</a> — the open semantic data platform.</p>
+
 # Inuits DAMS Filesystem Importer Service
 
 This is the Inuits DAMS Filesystem Importer service repository for the Inuits DAMS project. See [elody](https://gitlab.inuits.io/rnd/inuits/elody/elody-common) for general information.

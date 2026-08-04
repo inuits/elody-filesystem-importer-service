@@ -1,5 +1,6 @@
 class Singleton(type):
-    _instances = {}
+    def __init__(self):
+        self._instances = {}
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:

@@ -51,7 +51,6 @@ class Importer(ImporterBase):
         selected_file = csv_files[0]
         request_path = selected_folder / selected_file
         csv_path = source_path / request_path
-        auth_header = request.headers.get("Authorization")
 
         if not csv_path.exists():
             abort(400, message=f"{csv_path} not found")
@@ -76,7 +75,9 @@ class Importer(ImporterBase):
                     get_rabbit(),
                     str(csv_path),
                     str(folder_path),
-                    headers={"Authorization": auth_header, "X-User-Email": user_email},
+                    headers={
+                        "X-User-Email": user_email,
+                    },
                     parent_job_id=parent_job_id,
                     ocr=ocr,
                 )

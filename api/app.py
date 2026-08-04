@@ -3,7 +3,7 @@ import os
 import secrets
 from importlib import import_module
 
-from elody.loader import load_apps, load_policies, load_queues
+from elody.loader import load_apps, load_policies
 from elody.util import get_boolean_env
 from flask import Flask, g
 from flask_restful import Api
@@ -66,9 +66,6 @@ try:
 except ModuleNotFoundError:
     load_policies(policy_factory, logger)
 
-
-# Initialize RabbitMQ Queues
-load_queues(logger)
 
 from resources.importer import Importer, ImporterDirectories  # noqa: E402
 from resources.spec import OpenAPISpec  # noqa: E402

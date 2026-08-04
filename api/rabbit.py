@@ -1,5 +1,6 @@
 from importlib import import_module
 from json import loads
+from logging import getLogger
 from os import getenv
 from typing import Any
 
@@ -37,7 +38,7 @@ def init_rabbit(app):
         )
     else:
         _rabbit.init_app(app, "basic", loads, custom_json_dumps)
-    load_queues(None)
+    load_queues(getLogger(__name__))
 
 
 def get_rabbit() -> Any:

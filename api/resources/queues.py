@@ -43,7 +43,7 @@ def __argument_wrapper(*, queue_name, routing_key):
         routing_key=f"{routing_key_prefix}.import_csv",
     ),
 )
-def upload_csv(_routing_key, body, _message_id):
+def upload_csv(routing_key, body, message_id):
 
     collection_api_service = CollectionApiService()
     data = body["data"]
@@ -94,7 +94,7 @@ def upload_csv(_routing_key, body, _message_id):
         routing_key=f"{routing_key_prefix}.upload_file",
     ),
 )
-def upload_file(_routing_key, body, _message_id):
+def upload_file(routing_key, body, message_id):
     keep_files = get_boolean_env("KEEP_FILES", True)
 
     collection_api_service = CollectionApiService()

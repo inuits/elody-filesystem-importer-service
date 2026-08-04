@@ -1,5 +1,6 @@
 import os
 from os import getenv
+from pathlib import Path
 from time import sleep
 
 from amqpstorm.exception import AMQPConnectionError
@@ -16,7 +17,7 @@ routing_key_prefix = getenv("ROUTING_KEY_PREFIX", "dams")
 
 class ImporterBase(Resource):
     @staticmethod
-    def get_upload_source():
+    def get_upload_source() -> str:
         return os.getenv("UPLOAD_SOURCE", "/mnt/media-import")
 
     def __init__(self):
@@ -25,14 +26,14 @@ class ImporterBase(Resource):
 
 
 class Importer(ImporterBase):
-    def __get_request_body(self):  # noqa: RET503
+    def __get_request_body(self):
         if request_body := request.get_json(silent=True):
             return request_body
         abort(405, message="Invalid input")
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self):
-        path = self.upload_source
+        source_path = Path(self.upload_source)
         request_body = self.__get_request_body()
         ocr = False
         if "selected-folder" not in request_body:
@@ -40,30 +41,27 @@ class Importer(ImporterBase):
         if "ocr" in request_body:
             ocr = request_body["ocr"] in {True, "true", "True"}
 
-        selected_folder = request_body["selected-folder"]
-        folder_path = os.path.join(
-            self.upload_source,
-            selected_folder.removeprefix("/"),
-        )
-        csv_files = [file for file in os.listdir(folder_path) if file.endswith(".csv")]
+        selected_folder: str = request_body["selected-folder"]
+        folder_path = source_path / selected_folder.removeprefix("/")
+        csv_files = [file for file in folder_path.iterdir() if file.suffix == ".csv"]
 
         if len(csv_files) != 1:
             abort(400, status=400, message_id="error-csv-count", count=len(csv_files))
 
         selected_file = csv_files[0]
-        request_path = os.path.join(selected_folder, selected_file)
-        path = os.path.join(self.upload_source, request_path.removeprefix("/"))
+        request_path = selected_folder / selected_file
+        csv_path = source_path / request_path
         auth_header = request.headers.get("Authorization")
 
-        if not os.path.exists(path):
-            abort(400, message=f"{path} not found")
+        if not csv_path.exists():
+            abort(400, message=f"{csv_path} not found")
 
         header_email = request.headers.get("X-User-Email", None)
         user_email = header_email or g.get("user_context").email
 
         parent_job_data = JobData.model_validate(
             {
-                "name": f"Network Drive Import {path.split('/')[-1]}",
+                "name": f"Network Drive Import {csv_path.name}",
                 "job_type": "Network Import",
                 "user_email": (user_email or "developers@inuits.eu"),
                 "track_async_children": True,
@@ -76,8 +74,8 @@ class Importer(ImporterBase):
             try:
                 signal_import_csv(
                     get_rabbit(),
-                    path,
-                    folder_path,
+                    str(csv_path),
+                    str(folder_path),
                     headers={"Authorization": auth_header, "X-User-Email": user_email},
                     parent_job_id=parent_job_id,
                     ocr=ocr,
@@ -100,19 +98,19 @@ class Importer(ImporterBase):
 
 
 class ImporterDirectories(ImporterBase):
-    def __has_subdirs(self, path):
+    def __has_subdirs(self, path: str):
         with os.scandir(path) as entries:
             return any(entry.is_dir() for entry in entries)
 
     @policy_factory.authenticate(RequestContext(request))
     def get(self):
-        path = self.upload_source
+        source_path = Path(self.upload_source)
         if request_dir := request.args.get("dir"):
-            path = os.path.join(self.upload_source, request_dir.removeprefix("/"))
-        if not os.path.exists(path):
-            abort(400, message=f"{path} not found")
+            source_path = source_path / request_dir.removeprefix("/")
+        if not source_path.exists():
+            abort(400, message=f"{source_path} not found")
         directories = []
-        with os.scandir(path) as entries:
+        with os.scandir(source_path) as entries:
             for directory in [x for x in entries if x.is_dir()]:
                 directories.append(
                     {

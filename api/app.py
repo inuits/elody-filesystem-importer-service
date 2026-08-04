@@ -1,17 +1,18 @@
 import logging
 import os
 import secrets
+from importlib import import_module
 
 from elody.loader import load_apps, load_policies, load_queues
+from elody.util import get_boolean_env
 from flask import Flask, g
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
-from importlib import import_module
 from inuits_policy_based_auth.policy_factory import PolicyFactory
-from rabbit import init_rabbit, get_rabbit
+from rabbit import get_rabbit, init_rabbit
 
-if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
+if get_boolean_env("SENTRY_ENABLED", False):
     import sentry_sdk
     from sentry_sdk.integrations.flask import FlaskIntegration
 
@@ -68,10 +69,9 @@ except ModuleNotFoundError:
 
 # Initialize RabbitMQ Queues
 load_queues(logger)
-import resources.queues
 
-from resources.importer import Importer, ImporterDirectories
-from resources.spec import OpenAPISpec
+from resources.importer import Importer, ImporterDirectories  # noqa: E402
+from resources.spec import OpenAPISpec  # noqa: E402
 
 api.add_resource(ImporterDirectories, "/importer/directories")
 api.add_resource(Importer, "/importer/start")

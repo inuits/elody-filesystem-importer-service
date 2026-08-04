@@ -1,4 +1,3 @@
-from typing import Optional
 from pydantic import BaseModel
 
 
@@ -7,4 +6,4 @@ class JobData(BaseModel):
     job_type: str
     user_email: str = "developers@inuits.eu"
     track_async_children: bool = False
-    parent_id: Optional[str] = None
+    parent_id: str | None = None

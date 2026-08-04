@@ -1,8 +1,10 @@
 import os
 from os import getenv
+from pathlib import Path
 
 import requests
 from app import logger
+from elody.util import get_boolean_env
 from rabbit import get_rabbit
 from resources.utils import (
     fail_job_wrapper,
@@ -41,17 +43,17 @@ def __argument_wrapper(*, queue_name, routing_key):
         routing_key=f"{routing_key_prefix}.import_csv",
     ),
 )
-def upload_csv(routing_key, body, message_id):
+def upload_csv(_routing_key, body, _message_id):
 
     collection_api_service = CollectionApiService()
     data = body["data"]
-    csv_path = data["csv_path"]
+    csv_path = Path(data["csv_path"])
     folder_path = data["selected_folder"]
     ocr = data["ocr"]
     parent_job_id = data.get("parent_job_id", None)
     headers = data.get("headers")
 
-    with open(csv_path, "rb") as f:
+    with csv_path.open("rb") as f:
         data = f.read()
 
     start_job_wrapper(parent_job_id)
@@ -68,7 +70,7 @@ def upload_csv(routing_key, body, message_id):
     upload_links = collection_api_service.get_upload_link(
         data,
         parent_job_id,
-        csv_path.split("/")[-1],
+        csv_path.name,
         ocr=ocr,
         headers=headers,
     )
@@ -92,8 +94,8 @@ def upload_csv(routing_key, body, message_id):
         routing_key=f"{routing_key_prefix}.upload_file",
     ),
 )
-def upload_file(routing_key, body, message_id):
-    keep_files = getenv("KEEP_FILES", "true") in [1, "1", True, "True", "true"]
+def upload_file(_routing_key, body, _message_id):
+    keep_files = get_boolean_env("KEEP_FILES", True)
 
     collection_api_service = CollectionApiService()
     importer_service = ImporterService()
@@ -130,9 +132,10 @@ def __resolve_user_from_parent_job(main_job_id):
             headers=headers,
             timeout=5,
         )
-        if r.status_code == 200:  # noqa: PLR2004
+        if r.status_code == 200:
             job = r.json()
             return job.get("created_by") or job.get("last_editor") or None
-    except Exception:
-        pass
+    except Exception:  # noqa: BLE001
+        logger.exception("Error occurred getting user from parent job")
+
     return None

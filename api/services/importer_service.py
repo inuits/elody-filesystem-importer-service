@@ -1,6 +1,5 @@
 import os
-
-from urllib.parse import urlparse, unquote
+from urllib.parse import unquote, urlparse
 
 
 class ImporterService:

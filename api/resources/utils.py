@@ -66,7 +66,7 @@ def fail_job_wrapper(job_id: str, error_message: str) -> None:
         )
 
 
-def signal_import_csv(  # noqa: PLR0913
+def signal_import_csv(
     mq_client,
     csv_path,
     selected_folder,

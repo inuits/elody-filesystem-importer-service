@@ -39,11 +39,11 @@ class CollectionApiService(metaclass=Singleton):
     def validate(self, data):
         response = requests.post(
             f"{self.collection_api_url}/batch?dry_run=1",
-            headers={**self.headers, **{"Content-Type": "text/csv"}},
+            headers={**self.headers, "Content-Type": "text/csv"},
             data=data,
         ).json()
         if errors := response.get("errors"):
-            for _, error in errors.items():
+            for error in errors.values():
                 if error:
                     raise ValidationError(errors)
         return True
@@ -73,7 +73,7 @@ class CollectionApiService(metaclass=Singleton):
             .replace("\\n", "\n")
         )
 
-    def upload_file(  # noqa: PLR0913
+    def upload_file(
         self,
         upload_link,
         filename,
@@ -117,5 +117,5 @@ class CollectionApiService(metaclass=Singleton):
                 )
             ) and not keep_files:
                 file_path.unlink(missing_ok=True)
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001
             logger.error(str(error))

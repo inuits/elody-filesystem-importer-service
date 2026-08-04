@@ -105,16 +105,18 @@ def upload_file(routing_key, body, message_id):
     headers = data["headers"]
     user_email = __resolve_user_from_parent_job(parent_job_id)
     if upload_links:
-        for upload_link in upload_links.splitlines():
-            collection_api_service.upload_file(
-                upload_link,
-                importer_service.get_filename_from_upload_link(upload_link),
-                data["selected_folder"],
-                headers=headers,
-                keep_files=keep_files,
-                parent_job_id=parent_job_id,
-                user_email=user_email,
-            )
+        with requests.Session() as session:
+            for upload_link in upload_links.splitlines():
+                collection_api_service.upload_file(
+                    upload_link,
+                    importer_service.get_filename_from_upload_link(upload_link),
+                    data["selected_folder"],
+                    headers=headers,
+                    keep_files=keep_files,
+                    parent_job_id=parent_job_id,
+                    user_email=user_email,
+                    session=session,
+                )
     else:
         fail_job_wrapper(
             parent_job_id,

@@ -35,9 +35,10 @@ class CollectionApiService(metaclass=Singleton):
     def __init__(self):
         self.collection_api_url = os.getenv("COLLECTION_API_URL")
         self.headers = {"Authorization": f"Bearer {os.getenv('STATIC_JWT')}"}
+        self.session = requests.Session()
 
     def validate(self, data):
-        response = requests.post(
+        response = self.session.post(
             f"{self.collection_api_url}/batch?dry_run=1",
             headers={**self.headers, "Content-Type": "text/csv"},
             data=data,
@@ -56,12 +57,16 @@ class CollectionApiService(metaclass=Singleton):
         headers,
         *,
         ocr: bool = False,
+        session: requests.Session | None = None,
     ) -> str:
+        if not session:
+            session = self.session
         params = {"parent_job_id": parent_job_id}
         if ocr:
             params.update({"extra_mediafile_type": "ocr"})
+
         return (
-            requests.post(
+            session.post(
                 f"{self.collection_api_url}/batch?filename={quote(filename)}",
                 headers={**self.headers, **headers, **csv_headers},
                 data=data,
@@ -82,7 +87,10 @@ class CollectionApiService(metaclass=Singleton):
         keep_files=True,
         parent_job_id=None,
         user_email=None,
+        session: requests.Session | None = None,
     ):
+        if not session:
+            session = self.session
 
         file_path = Path(f"{folder}/{filename}")
         if not file_path.exists():
@@ -101,7 +109,7 @@ class CollectionApiService(metaclass=Singleton):
         if user_email:
             params.update({"user_email": user_email})
         with file_path.open("rb") as f:
-            response = requests.post(
+            response = session.post(
                 upload_link,
                 headers={**self.headers, **headers, **upload_file_headers},
                 data=f,

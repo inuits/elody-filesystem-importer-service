@@ -20,7 +20,7 @@ dependencies = [
   "elody[loader]==0.0.264",
   "flask==3.1.0",
   "flask-restful==0.3.10",
-  "flask-swagger-ui==4.11.1",
+  "flask-swagger-ui==5.32.14",
   "gunicorn==23.0.0",
   "idna==3.10",
   "importlib-metadata==8.6.1",

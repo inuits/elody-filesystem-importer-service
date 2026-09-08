@@ -1,10 +1,11 @@
 import os
 from http import HTTPStatus
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from urllib.parse import parse_qs, quote, urlparse
 
 import requests
 from app import logger
+from exceptions_filesystem_importer import IncorrectAbsolutePathException
 from resources.utils import (
     fail_job_wrapper,
 )
@@ -78,6 +79,23 @@ class CollectionApiService(metaclass=Singleton):
             .replace("\\n", "\n")
         )
 
+    def get_safe_linux_path(self, folder: str, filename: str) -> Path:
+        win_path = PureWindowsPath(filename)
+        folder_path = Path(folder)
+
+        if win_path.anchor:
+            raise IncorrectAbsolutePathException(filename)
+
+        target_path = folder_path.joinpath(*win_path.parts)
+
+        resolved_target = target_path.resolve()
+        resolved_base = folder_path.resolve()
+
+        if not resolved_target.is_relative_to(resolved_base):
+            raise ValueError("Path attempts to escape the CSV directory.")
+
+        return target_path
+
     def upload_file(
         self,
         upload_link,
@@ -92,7 +110,7 @@ class CollectionApiService(metaclass=Singleton):
         if not session:
             session = self.session
 
-        file_path = Path(f"{folder}/{filename}")
+        file_path = self.get_safe_linux_path(folder, filename)
         if not file_path.exists():
             if not parent_job_id:
                 parsed_url = urlparse(upload_link)

@@ -1,7 +1,7 @@
 [project]
 name = "filesystem-importer-service"
 version = "0.0.1"
-requires-python = "~=3.12.0"
+requires-python = "~=3.14.7"
 
 dependencies = [
   "amqpstorm==2.11.1",

@@ -5,6 +5,7 @@ from urllib.parse import parse_qs, quote, urlparse
 
 import requests
 from app import logger
+from elody.util import get_boolean_env
 from exceptions_filesystem_importer import IncorrectAbsolutePathException
 from resources.utils import (
     fail_job_wrapper,
@@ -19,6 +20,9 @@ csv_headers = {
 upload_file_headers = {
     "Content-Type": "application/octet-stream",
 }
+
+
+IN_CLUSTER = get_boolean_env("IN_CLUSTER", False)
 
 
 class ValidationError(Exception):
@@ -37,7 +41,7 @@ class CollectionApiService(metaclass=Singleton):
         self.collection_api_url = os.getenv("COLLECTION_API_URL")
         self.headers = {
             "Authorization": f"Bearer {os.getenv('STATIC_JWT')}",
-            "X-From-Service": "filesystem-importer-service",
+            "X-From-Service": f"{'filesystem-importer-service-internal' if IN_CLUSTER else 'filesystem-importer-service'}",
         }
         self.session = requests.Session()
 
@@ -136,6 +140,7 @@ class CollectionApiService(metaclass=Singleton):
                 data=f,
                 params=params,
             )
+            response.raise_for_status()
         try:
             if (
                 response.status_code in range(200, 300)

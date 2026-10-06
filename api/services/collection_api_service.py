@@ -114,6 +114,22 @@ class CollectionApiService(metaclass=Singleton):
         user_email=None,
         session: requests.Session | None = None,
     ):
+        """
+        TODO (tim.standaert): Arguably we should change over to the
+        streamed-upload flow from the storage-api, at least for large files.
+        These imports in theory are for either:
+        - many small to medium files
+        - one or moe very large files
+
+        Currently, when one fails we will raise, (if it's really an issue, 409
+        and 422 are silently swallowed), which will abort the entire rest of
+        the import, but the already uploaded files will be deleted. Arguably,
+        on network-instability errrors, we should retry. For the small files,
+        that's not a massive issue, but if we're halfway through a 40GiB (or
+        more) upload, we should be able to resume the upload. We have the
+        functionality for this with the streamed-upload logic in the
+        storage-api, but we need to check exactly what this does.
+        """
         if not session:
             session = self.session
 

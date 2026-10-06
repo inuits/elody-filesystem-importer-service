@@ -140,16 +140,15 @@ class CollectionApiService(metaclass=Singleton):
                 data=f,
                 params=params,
             )
-            response.raise_for_status()
         try:
-            if (
-                response.status_code in range(200, 300)
-                or response.status_code
-                in (
-                    HTTPStatus.CONFLICT,  # 409: Duplicate file, can be deleted
-                    HTTPStatus.UNPROCESSABLE_ENTITY,  # 422: Empty file
-                )
-            ) and not keep_files:
-                file_path.unlink(missing_ok=True)
+            if response.status_code in range(200, 300) or response.status_code in (
+                HTTPStatus.CONFLICT,  # 409: Duplicate file, can be deleted
+                HTTPStatus.UNPROCESSABLE_ENTITY,  # 422: Empty file
+            ):
+                if not keep_files:
+                    file_path.unlink(missing_ok=True)
+                    response.raise_for_status()
+            else:
+                response.raise_for_status()
         except Exception as error:  # noqa: BLE001
             logger.error(str(error))

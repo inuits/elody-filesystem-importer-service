@@ -121,7 +121,7 @@ def upload_file(routing_key, body, message_id):
                     )
                 except Exception as e:
                     fail_job_wrapper(
-                        parent_job_id, f"something went wrong during the upload, {e}"
+                        parent_job_id, f"Something went wrong during the upload, {e}"
                     )
                     raise
     else:

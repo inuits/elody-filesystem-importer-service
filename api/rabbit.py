@@ -10,6 +10,7 @@ from elody.util import (
     custom_json_dumps,
     get_boolean_env,
 )
+from observability import traced_rabbit
 
 _rabbit = None
 
@@ -25,11 +26,13 @@ def init_rabbit(app):
         if amqp_module.__name__ == "amqpstorm_flask"
         else amqp_module.ExchangeParams.ExchangeParams
     )
-    _rabbit = amqp_module.RabbitMQ(
-        exchange_params=ExchangeParams(
-            auto_delete=auto_delete_exchange,
-            durable=durable_exchange,
-            passive=passive_exchange,
+    _rabbit = traced_rabbit(
+        amqp_module.RabbitMQ(
+            exchange_params=ExchangeParams(
+                auto_delete=auto_delete_exchange,
+                durable=durable_exchange,
+                passive=passive_exchange,
+            )
         )
     )
     if amqp_module.__name__ == "amqpstorm_flask":

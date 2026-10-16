@@ -4,23 +4,13 @@ import secrets
 from importlib import import_module
 
 from elody.loader import load_apps, load_policies
-from elody.util import get_boolean_env
 from flask import Flask, g
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from inuits_policy_based_auth.policy_factory import PolicyFactory
 from rabbit import get_rabbit, init_rabbit
-
-if get_boolean_env("SENTRY_ENABLED", False):
-    import sentry_sdk
-    from sentry_sdk.integrations.flask import FlaskIntegration
-
-    sentry_sdk.init(
-        dsn=os.getenv("SENTRY_DSN"),
-        integrations=[FlaskIntegration()],
-        environment=os.getenv("NOMAD_NAMESPACE"),
-    )
+from observability import init_observability
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = "/spec/inuits-dams-filesystem-importer-service.json"  # Our API url (can of course be a local resource)
@@ -28,6 +18,7 @@ API_URL = "/spec/inuits-dams-filesystem-importer-service.json"  # Our API url (c
 swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL)
 
 app = Flask(__name__)
+init_observability(app)
 api = Api(app)
 app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(16))
 

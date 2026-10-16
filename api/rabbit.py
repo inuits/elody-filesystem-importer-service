@@ -10,7 +10,7 @@ from elody.util import (
     custom_json_dumps,
     get_boolean_env,
 )
-from observability import traced_rabbit
+from elody.observability import traced_rabbit
 
 _rabbit = None
 

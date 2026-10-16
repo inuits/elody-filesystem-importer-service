@@ -10,7 +10,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from inuits_policy_based_auth.policy_factory import PolicyFactory
 from rabbit import get_rabbit, init_rabbit
-from observability import init_observability
+from elody.observability import init_observability
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = "/spec/inuits-dams-filesystem-importer-service.json"  # Our API url (can of course be a local resource)

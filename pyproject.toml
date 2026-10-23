@@ -21,7 +21,7 @@ dependencies = [
   "flask==3.1.0",
   "flask-restful==0.3.10",
   "flask-swagger-ui==4.11.1",
-  "gunicorn==23.0.0",
+  "gunicorn==26.2.0",
   "idna==3.10",
   "importlib-metadata==8.6.1",
   "inuits-policy-based-auth==10.0.1",

@@ -14,7 +14,7 @@ deprecation==2.1.0
 elody[loader,observability]==0.0.270
 Flask==3.1.0
 Flask-RESTful==0.3.10
-flask-swagger-ui==4.11.1
+flask-swagger-ui==5.34.0
 gunicorn==23.0.0
 idna==3.10
 importlib-metadata==8.6.1

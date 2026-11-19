@@ -29,10 +29,13 @@ EXPOSE 5000
 ### Build stage
 FROM base-stage AS build-stage
 
-COPY docker/pip.conf /etc
 COPY api ./api
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=secret,id=PIP_INDEX_URL,uid=1000 \
+  --mount=type=secret,id=PIP_TRUSTED_HOST,uid=1000 \
+  export PIP_INDEX_URL="$(cat /run/secrets/PIP_INDEX_URL)" \
+  PIP_TRUSTED_HOST="$(cat /run/secrets/PIP_TRUSTED_HOST)" && \
+  pip install --no-cache-dir -r requirements.txt
 
 ### Production stage
 FROM base-stage AS production-stage

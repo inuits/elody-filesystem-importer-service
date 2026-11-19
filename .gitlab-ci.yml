@@ -1,20 +1,53 @@
 ---
-include:
-  - project: 'inuits/gitlab-ci/pipeline-templates'
-    ref: 'v4.1.0'
-    file: 
-      - '/pipelines/customers/dams/deliver-multi-customer.yml'
-      - '/jobs/docker/build-pip.yml'
+stages:
+  - build
+  - security
+  - deliver
 
+deliver:
+  needs:
+    - security:gitleaks
+    - build
 
 variables:
-  PROJECT: 'dams'
-  APPLICATION: 'filesystem-importer'
+  IMAGE_NAME: dams-filesystem-importer
+  HARBOR_PROJECT_PREFIX: elody-dams-dev
+  BUILD_REGISTRY: ${HARBOR_URL}/build/${HARBOR_PROJECT_PREFIX}
+  DESTINATION_REGISTRY: ${HARBOR_URL}/${HARBOR_PROJECT_PREFIX}/inuits
 
-  HARBOR_PROJECT_DEV: elody-dams-dev
+  PYPI_HOST: nexus.inuits.eu
+  PYPI_PATH: /repository/python/simple
+  PIP_INDEX_URL: "https://${PYPI_USERNAME}:${PYPI_PASSWORD}@${PYPI_HOST}${PYPI_PATH}"
+  PIP_TRUSTED_HOST: "${PYPI_HOST}"
+  UV_IMAGE_PREFIX: kearblx6.c1.gra9.container-registry.ovh.net/ghcr
 
-customers:
-  parallel:
-    matrix:
-      - CUSTOMER:
-        - digipolis
+include:
+  - component: $CI_SERVER_FQDN/components/containers/build@v0.10.3
+    inputs:
+      image_name: ${IMAGE_NAME}
+      destination_registry: ${BUILD_REGISTRY}
+      dockerfile_path: docker/uv.Dockerfile
+      build_args:
+        - UV_IMAGE_PREFIX=${UV_IMAGE_PREFIX}
+      build_secrets:
+        - id=PIP_INDEX_URL,env=PIP_INDEX_URL
+        - id=PIP_TRUSTED_HOST,env=PIP_TRUSTED_HOST
+
+  - component: $CI_SERVER_FQDN/components/containers/deliver@v0.10.3
+    inputs:
+      image_name: ${IMAGE_NAME}
+      source_registry: ${BUILD_REGISTRY}
+      destination_registries:
+        - ${DESTINATION_REGISTRY}
+      rules:
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+  - component: $CI_SERVER_FQDN/rnd/inuits/dams/ci-components/gitleaks@v0.0.3
+
+# Only run pipeline for default branch, otherwise require manual approval
+build:
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+      when: always
+    - if: "$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH"
+      when: manual
